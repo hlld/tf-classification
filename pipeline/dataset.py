@@ -17,8 +17,7 @@ class Imagefolder(object):
         if isinstance(input_size, int):
             input_size = (input_size, input_size)
         if hyp_params is None:
-            hyp_params = {'hsv': [0.015, 0.7, 0.4],
-                          'flip': 0.5,
+            hyp_params = {'flip': 0.5,
                           'crop': 0.5,
                           'mean': [0.485, 0.456, 0.406],
                           'std': [0.229, 0.224, 0.225]}
@@ -31,9 +30,9 @@ class Imagefolder(object):
         extensions = ('.jpg', '.jpeg', '.png', '.ppm',
                       '.bmp', '.pgm', '.tif', '.tiff')
         classes, class_map = self.find_classes(data_path)
-        samples = self.make_dataset(data_path,
-                                    class_map,
-                                    extensions)
+        samples = self._make_dataset(data_path,
+                                     class_map,
+                                     extensions)
         if len(samples) == 0:
             raise RuntimeError('Found 0 files in ' + data_path)
         self.classes = classes
@@ -49,9 +48,9 @@ class Imagefolder(object):
         return classes, class_map
 
     @staticmethod
-    def make_dataset(directory,
-                     class_map,
-                     extensions):
+    def _make_dataset(directory,
+                      class_map,
+                      extensions):
         instances = []
         directory = os.path.expanduser(directory)
         for target_class in sorted(class_map.keys()):
@@ -153,23 +152,6 @@ class Imagefolder(object):
             top, left, h, w = self.random_size_rect(image)
         return image[top:(top + h), left:(left + w), :]
 
-    def random_hsv(self, image):
-        ratio = 1.0 + np.random.uniform(-1, 1, 3) * self.hyp_params['hsv']
-        hue, sat, val = cv2.split(cv2.cvtColor(image,
-                                               cv2.COLOR_BGR2HSV))
-        dtype = image.dtype
-        x = np.arange(0, 256, dtype=np.int16)
-        lut_hue, lut_sat, lut_val = \
-            (((x * ratio[0]) % 180).astype(dtype),
-             np.clip(x * ratio[1], 0, 255).astype(dtype),
-             np.clip(x * ratio[2], 0, 255).astype(dtype))
-
-        image_hsv = cv2.merge((cv2.LUT(hue, lut_hue),
-                               cv2.LUT(sat, lut_sat),
-                               cv2.LUT(val, lut_val)))
-        image_hsv = image_hsv.astype(dtype)
-        return cv2.cvtColor(image_hsv, cv2.COLOR_HSV2BGR)
-
     def normalize(self,
                   image,
                   inplace=False):
@@ -189,7 +171,6 @@ class Imagefolder(object):
         image_path, label = self.samples[self.sample_index]
         image = self.load_image(image_path)
         if self.data_augment:
-            image = self.random_hsv(image)
             if random.random() < self.hyp_params['flip']:
                 image = np.fliplr(image)
             if random.random() < self.hyp_params['crop']:
@@ -204,6 +185,8 @@ class Imagefolder(object):
         image = self.normalize(image, inplace=True)
         image = np.ascontiguousarray(image)
         self.sample_index += 1
+        if self.sample_index >= len(self.samples):
+            self.sample_index = 0
         yield image, label
 
     def make_dataset(self,
