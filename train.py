@@ -64,6 +64,7 @@ def train_network(_argv):
                                        buffer_size=0)
     test_loader = test_loader.with_options(options)
     test_loader = strategy.experimental_distribute_dataset(test_loader)
+    test_batch = (test_samples + FLAGS.batch_size - 1) // FLAGS.batch_size
 
     with strategy.scope():
         train_loss = tf.keras.metrics.Mean(name='train_loss')
@@ -135,6 +136,7 @@ def train_network(_argv):
             per_sample_loss,
             global_batch_size=FLAGS.batch_size)
         val_loss.update_state(loss)
+        outputs = tf.argmax(outputs, axis=-1)
         return outputs
 
     @tf.function(experimental_relax_shapes=True)
@@ -144,14 +146,12 @@ def train_network(_argv):
         outputs = strategy.experimental_local_results(per_replica_outputs)
         labels = strategy.experimental_local_results(inputs[1])
         outputs = tf.concat(outputs, axis=0)
-        outputs = tf.argmax(outputs, axis=-1)
         labels = tf.concat(labels, axis=0)
-        labels = tf.argmax(labels, axis=-1)
         accuracy.update_state(labels, outputs)
 
     def _write_checkpoint():
         ckpt_prefix = os.path.join(FLAGS.save_path,
-                                   '%s_%d_%.4f_%.4f_%.4f.ckpt' % (
+                                   '%s_%d_%.4g_%.4g_%.4g.ckpt' % (
                                        FLAGS.model_type,
                                        epoch,
                                        train_loss.result(),
@@ -178,7 +178,7 @@ def train_network(_argv):
             progress.set_description(desc)
 
         desc = ('%10s' * 2) % ('Top1', 'loss')
-        for inputs in tqdm(test_loader, desc=desc):
+        for inputs in tqdm(test_loader, desc=desc, total=test_batch):
             _distributed_eval_step(inputs)
         print(('%10.4g' * 2) % (accuracy.result(),
                                 val_loss.result()))
