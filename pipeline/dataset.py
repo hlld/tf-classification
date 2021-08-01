@@ -169,6 +169,7 @@ class Imagefolder(object):
 
     def load_sample(self):
         image_path, label = self.samples[self.sample_index]
+        label = np.array(label).reshape((-1,))
         image = self.load_image(image_path)
         if self.data_augment:
             if random.random() < self.hyp_params['flip']:
@@ -198,7 +199,7 @@ class Imagefolder(object):
         output_shapes = ((None, None, 3), (1,))
         ds = tf.data.Dataset.from_generator(
             self.load_sample,
-            output_types=(tf.float32, tf.float32),
+            output_types=(tf.float32, tf.int32),
             output_shapes=output_shapes,
             args=None)
         if shuffle:
@@ -207,7 +208,7 @@ class Imagefolder(object):
         ds_batch = ds.padded_batch(
             batch_size,
             padded_shapes=output_shapes,
-            padding_values=(0, 0),
+            padding_values=(0.0, 0),
             drop_remainder=drop_remainder)
         ds_batch = ds_batch.apply(tf.data.experimental.ignore_errors())
         if buffer_size == 0:

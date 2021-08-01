@@ -30,8 +30,13 @@ def train_network(_argv):
     if strategy.num_replicas_in_sync > 1:
         FLAGS.batch_size *= strategy.num_replicas_in_sync
         FLAGS.initial_lr *= strategy.num_replicas_in_sync
-        print('Total batch size %d' % FLAGS.batch_size)
-        print('Initial learning rate %.4f' % FLAGS.initial_lr)
+    print('Total batch size %d' % FLAGS.batch_size)
+    print('Initial learning rate %g' % FLAGS.initial_lr)
+
+    # Disable AutoShard policy
+    options = tf.data.Options()
+    options.experimental_distribute.auto_shard_policy = \
+        tf.data.experimental.AutoShardPolicy.OFF
 
     trainset = Imagefolder(FLAGS.data_root,
                            data_split='train',
@@ -43,8 +48,10 @@ def train_network(_argv):
                                          iter_count=None,
                                          drop_remainder=False,
                                          buffer_size=0)
+    train_loader = train_loader.with_options(options)
     train_loader = strategy.experimental_distribute_dataset(train_loader)
     train_batch = (train_samples + FLAGS.batch_size - 1) // FLAGS.batch_size
+
     testset = Imagefolder(FLAGS.data_root,
                           data_split='val',
                           input_size=FLAGS.input_size,
@@ -55,6 +62,7 @@ def train_network(_argv):
                                        iter_count=test_samples,
                                        drop_remainder=False,
                                        buffer_size=0)
+    test_loader = test_loader.with_options(options)
     test_loader = strategy.experimental_distribute_dataset(test_loader)
 
     with strategy.scope():

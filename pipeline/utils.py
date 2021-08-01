@@ -137,7 +137,7 @@ class Bottleneck(tf.keras.layers.Layer):
              training=None):
         shortcut = inputs
         inputs = self.sequential(inputs, training=training)
-        if self.shortcut is not None:
+        if self.shortcut_conv is not None:
             shortcut = self.shortcut_conv(shortcut, training=training)
         inputs = inputs + shortcut
         return self.act(inputs)
