@@ -1,6 +1,6 @@
-# TensorFlow Pipeline
+# TensorFlow Classification
 
-Implementation of TensorFlow-2.x training and testing pipeline
+Implementation of TensorFlow-2.x training and testing classification pipeline
 
 ## Development History
 
