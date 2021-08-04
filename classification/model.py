@@ -1,5 +1,5 @@
 import tensorflow as tf
-from pipeline.utils import Conv, Bottleneck, GlobalPool2d
+from classification.utils import Conv, Bottleneck, GlobalPool2d
 
 
 class ResNet(tf.keras.Model):

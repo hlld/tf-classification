@@ -4,9 +4,9 @@ import os
 import tensorflow as tf
 import tensorflow.keras.mixed_precision as mp
 from tqdm import tqdm
-from pipeline.model import ResNet
-from pipeline.loss import CategoricalCrossentropy
-from pipeline.dataset import Imagefolder
+from classification.model import ResNet
+from classification.loss import CategoricalCrossentropy
+from classification.dataset import Imagefolder
 
 
 def train_network(_argv):
